@@ -64,7 +64,7 @@ jobs:
 
       # Dependencies (requirements.txt, package-lock.json) + hardcoded secrets + misconfigurations
       - name: Trivy scan (SARIF report)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -85,23 +85,25 @@ jobs:
           category: trivy-fs
 
       - name: Trivy gate (fail on CRITICAL/HIGH)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
           scanners: vuln,secret
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
+          trivyignores: .trivyignore
           skip-dirs: "**/node_modules,**/venv"
           format: table
           exit-code: "1"
 
       - name: Trivy IaC scan (Kubernetes manifests, Helm chart, Dockerfiles)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: config
           scan-ref: .
           severity: ${{ env.TRIVY_SEVERITY }}
+          trivyignores: .trivyignore
           skip-dirs: "**/node_modules,**/venv"
           format: table
           exit-code: "0"   # report only; set to "1" once existing findings are fixed
@@ -125,13 +127,14 @@ jobs:
         run: docker build -t cloudchange-${{ matrix.service }}:${{ github.sha }} ./${{ matrix.service }}
 
       - name: Trivy image scan (SARIF report)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: cloudchange-${{ matrix.service }}:${{ github.sha }}
           format: sarif
           output: trivy-${{ matrix.service }}.sarif
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
+          trivyignores: .trivyignore
           vuln-type: os,library
           exit-code: "0"
 
@@ -144,12 +147,13 @@ jobs:
           category: trivy-${{ matrix.service }}
 
       - name: Trivy image gate (fail on CRITICAL/HIGH)
-        uses: aquasecurity/trivy-action@v0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: cloudchange-${{ matrix.service }}:${{ github.sha }}
           format: table
           severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
+          trivyignores: .trivyignore
           vuln-type: os,library
           exit-code: "1"
 
