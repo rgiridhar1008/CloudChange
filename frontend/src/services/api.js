@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 // Base URL points to the FastAPI backend, configurable via .env
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+const rawUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_URL = rawUrl.endsWith('/api/v1') ? rawUrl : `${rawUrl}/api/v1`;
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -136,6 +137,20 @@ export const api = {
   },
   getClusterHealth: async () => {
     const response = await apiClient.get('/cluster/health');
+    return response.data;
+  },
+
+  // Notifications
+  getNotifications: async (limit = 50) => {
+    const response = await apiClient.get(`/notifications/?limit=${limit}`);
+    return response.data;
+  },
+  markNotificationAsRead: async (id) => {
+    const response = await apiClient.put(`/notifications/${id}/read`);
+    return response.data;
+  },
+  markAllNotificationsAsRead: async () => {
+    const response = await apiClient.put('/notifications/read-all');
     return response.data;
   },
 };

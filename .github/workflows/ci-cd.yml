@@ -2,162 +2,200 @@ name: CI/CD Pipeline with CloudChange Risk Analysis
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main", "master"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main", "master"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
-  REGISTRY: docker.io
-  IMAGE_NAME: ${{ github.repository }}
+  TRIVY_SEVERITY: CRITICAL,HIGH
 
 jobs:
-  build-and-test:
+  # ---------------------------------------------------------------- tests
+  backend-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-
-      - name: Install Backend Dependencies
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install dependencies
         working-directory: ./backend
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest
-
-      - name: Run Backend Tests
+      - name: Run backend tests
         working-directory: ./backend
-        run: python -m pytest tests/
+        run: python -m pytest tests/ -v
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-
-      - name: Install Frontend Dependencies
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
         working-directory: ./frontend
-        run: npm install
-
-      - name: Build Frontend
+        run: npm ci
+      - name: Build
         working-directory: ./frontend
         run: npm run build
 
-  docker-build-scan:
-    needs: build-and-test
+  # ---------------------------------------------------------------- trivy: source + IaC
+  trivy-repo-scan:
+    name: Trivy (filesystem, secrets, IaC)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Build Backend Image
-        run: docker build -t my-backend:latest ./backend
-
-      - name: Run Trivy vulnerability scanner on Backend
-        uses: aquasecurity/trivy-action@0.24.0
+      # Dependencies (requirements.txt, package-lock.json) + hardcoded secrets + misconfigurations
+      - name: Trivy scan (SARIF report)
+        uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: 'my-backend:latest'
-          format: 'table'
-          exit-code: '1'
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: ${{ env.TRIVY_SEVERITY }}
           ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          skip-dirs: "**/node_modules,**/venv"
+          format: sarif
+          output: trivy-fs.sarif
+          exit-code: "0"
 
+      - name: Upload SARIF to GitHub code scanning
+        if: always() && hashFiles('trivy-fs.sarif') != ''
+        continue-on-error: true   # needs code scanning enabled (public repo or GitHub Advanced Security)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Trivy gate (fail on CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: true
+          skip-dirs: "**/node_modules,**/venv"
+          format: table
+          exit-code: "1"
+
+      - name: Trivy IaC scan (Kubernetes manifests, Helm chart, Dockerfiles)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: ${{ env.TRIVY_SEVERITY }}
+          skip-dirs: "**/node_modules,**/venv"
+          format: table
+          exit-code: "0"   # report only; set to "1" once existing findings are fixed
+
+  # ---------------------------------------------------------------- docker build + trivy image scan
+  docker-build-scan:
+    name: Docker build + Trivy (${{ matrix.service }})
+    needs: [backend-test, frontend-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t cloudchange-${{ matrix.service }}:${{ github.sha }} ./${{ matrix.service }}
+
+      - name: Trivy image scan (SARIF report)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: cloudchange-${{ matrix.service }}:${{ github.sha }}
+          format: sarif
+          output: trivy-${{ matrix.service }}.sarif
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: "0"
+
+      - name: Upload SARIF to GitHub code scanning
+        if: always() && hashFiles(format('trivy-{0}.sarif', matrix.service)) != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.service }}.sarif
+          category: trivy-${{ matrix.service }}
+
+      - name: Trivy image gate (fail on CRITICAL/HIGH)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: cloudchange-${{ matrix.service }}:${{ github.sha }}
+          format: table
+          severity: ${{ env.TRIVY_SEVERITY }}
+          ignore-unfixed: true
+          vuln-type: os,library
+          exit-code: "1"
+
+  # ---------------------------------------------------------------- helm
   helm-validation:
-    needs: build-and-test
+    needs: [backend-test, frontend-build]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
         with:
           version: v3.12.0
-
-      - name: Helm Lint
+      - name: Helm lint
         run: helm lint ./helm/cloudchange-demo
-
-      - name: Helm Template
+      - name: Helm template
         run: helm template ./helm/cloudchange-demo
 
+  # ---------------------------------------------------------------- cloudchange risk analysis
   cloudchange-analysis:
-    needs: [docker-build-scan, helm-validation]
+    needs: [trivy-repo-scan, docker-build-scan, helm-validation]
     runs-on: ubuntu-latest
     outputs:
       requires_approval: ${{ steps.analyze.outputs.requires_approval }}
       strategy: ${{ steps.analyze.outputs.strategy }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-
-      - name: Run CloudChange Analysis
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Run CloudChange analysis
         id: analyze
-        working-directory: ./backend
         run: |
-          pip install -r requirements.txt uvicorn httpx
-          
-          # Run payload generator script
-          python ../scripts/generate_payload.py "payment-service"
-          
-          # Start server in background for testing
-          uvicorn app.main:app --host 127.0.0.1 --port 8000 &
-          sleep 5
-          
-          # Trigger Risk Engine
-          curl -s -X POST http://127.0.0.1:8000/api/v1/analyze/risk \
-            -H "Content-Type: application/json" \
-            -d @dynamic_payload.json > risk_output.json
-          
-          cat risk_output.json
-          
-          # Map risk_output fields to Deployment Strategy Request fields
-          python -c "
-          import json
-          risk = json.load(open('risk_output.json'))
-          req = {
-            'risk_score': risk['risk_score'],
-            'risk_level': risk['risk_level'],
-            'blast_radius': risk['blast_radius'],
-            'affected_services': risk['affected_services'],
-            'criticality': risk['blast_radius']['criticality']
-          }
-          with open('deploy_req.json', 'w') as f:
-              json.dump(req, f)
-          "
-          
-          # Trigger Deployment Advisor
-          curl -s -X POST http://127.0.0.1:8000/api/v1/deployment/recommendation \
-            -H "Content-Type: application/json" \
-            -d @deploy_req.json > deploy_output.json
-            
-          cat deploy_output.json
-          
-          # Extract outputs
-          REQUIRES_APPROVAL=$(python -c "import json; print(json.load(open('deploy_output.json')).get('requires_approval', False))")
-          STRATEGY=$(python -c "import json; print(json.load(open('deploy_output.json')).get('strategy', 'ROLLING'))")
-          
-          echo "requires_approval=$REQUIRES_APPROVAL" >> "$GITHUB_OUTPUT"
-          echo "strategy=$STRATEGY" >> "$GITHUB_OUTPUT"
+          pip install -r backend/requirements.txt
+          bash scripts/run_cloudchange_analysis.sh "$GITHUB_OUTPUT" payment-service
 
   deployment-decision:
     needs: cloudchange-analysis
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: ${{ needs.cloudchange-analysis.outputs.requires_approval == 'True' && 'production-approval' || 'development' }}
     steps:
-      - name: Proceed with Deployment
+      - name: Proceed with deployment
         run: |
           echo "Deployment Strategy: ${{ needs.cloudchange-analysis.outputs.strategy }}"
           echo "Requires Approval: ${{ needs.cloudchange-analysis.outputs.requires_approval }}"
           echo "Deployment logic simulated."
-          # If we reach here, we are either automatically approved (development env) 
-          # or manually approved (production-approval env).

@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: cloudchange
-      POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: cloudchange
+      POSTGRES_USER: cloudchange_user
+      POSTGRES_PASSWORD: cloudchange_pass
+      POSTGRES_DB: cloudchange_db
     ports:
       - "5432:5432"
     volumes:

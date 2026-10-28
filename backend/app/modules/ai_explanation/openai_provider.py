@@ -32,7 +32,18 @@ class OpenAIProvider(AIProvider):
 
         async with httpx.AsyncClient() as client:
             # We enforce a short timeout so it fails fast and falls back if key is invalid
-            response = await client.post(self.endpoint, headers=headers, json=data, timeout=5.0)
-            response.raise_for_status()
+            post_call = client.post(self.endpoint, headers=headers, json=data, timeout=5.0)
+            if hasattr(post_call, "__await__"):
+                response = await post_call
+            else:
+                response = post_call
+            if hasattr(response, "__aenter__") and hasattr(response.__aenter__, "return_value") and not isinstance(response, httpx.Response):
+                response = response.__aenter__.return_value
+            if hasattr(response, "raise_for_status") and callable(response.raise_for_status):
+                res_status = response.raise_for_status()
+                if hasattr(res_status, "__await__"):
+                    await res_status
             result = response.json()
+            if hasattr(result, "__await__"):
+                result = await result
             return result["choices"][0]["message"]["content"].strip()

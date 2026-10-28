@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.core.database import Base, engine
 
@@ -8,7 +8,8 @@ Base.metadata.create_all(bind=engine)
 
 @pytest.mark.asyncio
 async def test_unified_analysis_pipeline():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         payload = {
             "resource_name": "payment-service",
             "manifest_content": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: payment-service\nspec:\n  replicas: 1\n  template:\n    spec:\n      containers:\n      - name: payment\n        image: payment:v2\n        resources:\n          requests:\n            memory: \"128Mi\"\n"
@@ -34,7 +35,8 @@ async def test_unified_analysis_pipeline():
 
 @pytest.mark.asyncio
 async def test_deployment_and_persistent_rollback():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # Start a deployment
         start_payload = {"service_name": "db-test-service", "new_version": "v1.5"}
         res1 = await ac.post("/api/v1/deployment/start", json=start_payload)

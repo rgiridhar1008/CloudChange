@@ -13,6 +13,14 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str | None = None
     POSTGRES_DB: str | None = None
     POSTGRES_PORT: str = "5432"
+
+    # External Notifications (SMTP - optional)
+    SMTP_SERVER: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    NOTIFICATION_EMAIL_TO: str | None = None
+    NOTIFICATION_EMAIL_FROM: str | None = None
     
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:

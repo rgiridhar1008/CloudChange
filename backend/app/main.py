@@ -104,6 +104,6 @@ def health_check(db: Session = Depends(get_db)):
 
     return HealthResponse(
         status="ok",
-        service=settings.PROJECT_NAME,
+        service="CloudChange API",
         database=db_status
     )

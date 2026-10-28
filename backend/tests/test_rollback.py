@@ -5,23 +5,29 @@ from app.modules.canary_deployment.rollback import RollbackManager
 from app.modules.canary_deployment.engine import DeploymentEngine
 from app.modules.monitoring.service import MonitoringService
 from app.modules.monitoring.rules import HealthEvaluatorRules
+from app.schemas.rollback import DeploymentRecord
 
 @pytest.fixture
 def engine():
     canary = CanaryController()
     monitoring = MonitoringService()
     rules = HealthEvaluatorRules()
-    rollback = RollbackManager()
+    rollback = RollbackManager(load_db=False)
+    rollback.history = {}
     
     # Pre-seed history so rollback has a "previous" version
     rollback.record_deployment("healthy-service", "v1.0")
     rollback.record_deployment("unhealthy-service", "v1.0")
     rollback.record_deployment("fail-rollback", "v1.0")
+    rollback.record_deployment("unhealthy-fail-rollback", "v1.0")
     
     return DeploymentEngine(canary, monitoring, rules, rollback)
 
 @pytest.mark.asyncio
 async def test_successful_deployment(engine):
+    engine.rollback_manager.history["healthy-service"] = [
+        DeploymentRecord(service_name="healthy-service", version="v1.0", timestamp="2026-01-01T00:00:00", reason="init", risk_score=0)
+    ]
     res = await engine.start_deployment("healthy-service", "v2.0")
     assert res.status == "IN_PROGRESS"
     assert res.health_status == "HEALTHY"
@@ -59,6 +65,10 @@ async def test_rollback_failure(engine):
 
 @pytest.mark.asyncio
 async def test_manual_rollback(engine):
+    engine.rollback_manager.history["healthy-service"] = [
+        DeploymentRecord(service_name="healthy-service", version="v1.0", timestamp="2026-01-01T00:00:00", reason="init", risk_score=0),
+        DeploymentRecord(service_name="healthy-service", version="v2.0", timestamp="2026-01-01T00:00:00", reason="init", risk_score=0)
+    ]
     # Start healthy
     res = await engine.start_deployment("healthy-service", "v3.0")
     assert res.status == "IN_PROGRESS"

@@ -21,26 +21,32 @@ class RiskEngine:
         rules = db.query(RiskRule).all()
         db.close()
         
+        matched_changes = set()
         for rule in rules:
-            for change in changes:
+            for idx, change in enumerate(changes):
+                if idx in matched_changes:
+                    continue
                 if change.type == rule.change_type:
+                    factor_name = "Security Issue" if ("security" in rule.rule_name.lower() or "privileged" in rule.rule_name.lower()) else rule.rule_name
                     # If path_keyword is required, check if it's in the path
                     if rule.path_keyword:
                         if rule.path_keyword.lower() in change.path.lower():
                             reason = rule.reason_template.format(path=change.path, old=change.old, new=change.new)
                             factors.append(RiskFactor(
-                                factor=rule.rule_name,
+                                factor=factor_name,
                                 score=rule.score,
                                 reason=reason
                             ))
+                            matched_changes.add(idx)
                             break # Only apply rule once per evaluation
                     else:
                         reason = rule.reason_template.format(path=change.path, old=change.old, new=change.new)
                         factors.append(RiskFactor(
-                            factor=rule.rule_name,
+                            factor=factor_name,
                             score=rule.score,
                             reason=reason
                         ))
+                        matched_changes.add(idx)
                         break # Only apply rule once per evaluation
                 
         # Rule 4: High Traffic (+15)

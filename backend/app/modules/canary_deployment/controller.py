@@ -54,7 +54,8 @@ class CanaryController:
                 version="v1alpha3",
                 namespace=namespace,
                 plural="virtualservices",
-                name=service_name
+                name=service_name,
+                _request_timeout=(1, 2)
             )
             
             # Assuming standard 2 route setup
@@ -67,7 +68,8 @@ class CanaryController:
                 namespace=namespace,
                 plural="virtualservices",
                 name=service_name,
-                body=vs
+                body=vs,
+                _request_timeout=(1, 2)
             )
             logger.info(f"Successfully patched Istio VirtualService for {service_name}")
             return
@@ -101,7 +103,7 @@ class CanaryController:
     def _patch_deployment_replicas(self, name: str, replicas: int, namespace: str):
         try:
             body = {'spec': {'replicas': replicas}}
-            self.apps_v1.patch_namespaced_deployment(name=name, namespace=namespace, body=body)
+            self.apps_v1.patch_namespaced_deployment(name=name, namespace=namespace, body=body, _request_timeout=(1, 2))
         except ApiException as e:
             if e.status != 404:
                 raise e

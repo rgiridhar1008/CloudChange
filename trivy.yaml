@@ -1,0 +1,16 @@
+# Shared Trivy settings. Use locally with:  trivy --config trivy.yaml image cloudchange-backend:latest
+severity:
+  - CRITICAL
+  - HIGH
+vulnerability:
+  ignore-unfixed: true
+scan:
+  skip-dirs:
+    - "**/node_modules"
+    - "**/venv"
+    - "**/__pycache__"
+  scanners:
+    - vuln
+    - secret
+    - misconfig
+timeout: 10m

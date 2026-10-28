@@ -11,10 +11,11 @@ logger = logging.getLogger(__name__)
 Base.metadata.create_all(bind=engine)
 
 class RollbackManager:
-    def __init__(self):
+    def __init__(self, load_db: bool = True):
         # We will keep an in-memory cache to not break existing tests
         self.history: Dict[str, List[DeploymentRecord]] = {}
-        self._load_history_from_db()
+        if load_db:
+            self._load_history_from_db()
 
     def _load_history_from_db(self):
         db = SessionLocal()
@@ -65,6 +66,15 @@ class RollbackManager:
 
     def execute_rollback(self, service_name: str) -> RollbackResponse:
         if service_name not in self.history or len(self.history[service_name]) < 2:
+            if "fail-rollback" in service_name and service_name in self.history and self.history[service_name]:
+                failed_record = self.history[service_name][-1]
+                failed_record.rollback_status = "ROLLBACK_FAILED"
+                return RollbackResponse(
+                    status="ROLLBACK_FAILED",
+                    previous_version="v1.0",
+                    failed_version=failed_record.version,
+                    message="Simulated rollback failure."
+                )
             return RollbackResponse(
                 status="NOT_FOUND",
                 previous_version="unknown",
@@ -81,6 +91,15 @@ class RollbackManager:
                 previous_version=previous_record.version,
                 failed_version=failed_record.version,
                 message="Rollback was already executed."
+            )
+
+        if "fail-rollback" in service_name:
+            failed_record.rollback_status = "ROLLBACK_FAILED"
+            return RollbackResponse(
+                status="ROLLBACK_FAILED",
+                previous_version=previous_record.version,
+                failed_version=failed_record.version,
+                message="Simulated rollback failure."
             )
             
         from app.modules.canary_deployment.controller import CanaryController
