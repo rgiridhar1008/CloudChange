@@ -1,0 +1,163 @@
+name: CI/CD Pipeline with CloudChange Risk Analysis
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run Backend Tests
+        working-directory: ./backend
+        run: python -m pytest tests/
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: npm run build
+
+  docker-build-scan:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Backend Image
+        run: docker build -t my-backend:latest ./backend
+
+      - name: Run Trivy vulnerability scanner on Backend
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: 'my-backend:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  helm-validation:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.0
+
+      - name: Helm Lint
+        run: helm lint ./helm/cloudchange-demo
+
+      - name: Helm Template
+        run: helm template ./helm/cloudchange-demo
+
+  cloudchange-analysis:
+    needs: [docker-build-scan, helm-validation]
+    runs-on: ubuntu-latest
+    outputs:
+      requires_approval: ${{ steps.analyze.outputs.requires_approval }}
+      strategy: ${{ steps.analyze.outputs.strategy }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Run CloudChange Analysis
+        id: analyze
+        working-directory: ./backend
+        run: |
+          pip install -r requirements.txt uvicorn httpx
+          
+          # Run payload generator script
+          python ../scripts/generate_payload.py "payment-service"
+          
+          # Start server in background for testing
+          uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+          sleep 5
+          
+          # Trigger Risk Engine
+          curl -s -X POST http://127.0.0.1:8000/api/v1/analyze/risk \
+            -H "Content-Type: application/json" \
+            -d @dynamic_payload.json > risk_output.json
+          
+          cat risk_output.json
+          
+          # Map risk_output fields to Deployment Strategy Request fields
+          python -c "
+          import json
+          risk = json.load(open('risk_output.json'))
+          req = {
+            'risk_score': risk['risk_score'],
+            'risk_level': risk['risk_level'],
+            'blast_radius': risk['blast_radius'],
+            'affected_services': risk['affected_services'],
+            'criticality': risk['blast_radius']['criticality']
+          }
+          with open('deploy_req.json', 'w') as f:
+              json.dump(req, f)
+          "
+          
+          # Trigger Deployment Advisor
+          curl -s -X POST http://127.0.0.1:8000/api/v1/deployment/recommendation \
+            -H "Content-Type: application/json" \
+            -d @deploy_req.json > deploy_output.json
+            
+          cat deploy_output.json
+          
+          # Extract outputs
+          REQUIRES_APPROVAL=$(python -c "import json; print(json.load(open('deploy_output.json')).get('requires_approval', False))")
+          STRATEGY=$(python -c "import json; print(json.load(open('deploy_output.json')).get('strategy', 'ROLLING'))")
+          
+          echo "requires_approval=$REQUIRES_APPROVAL" >> "$GITHUB_OUTPUT"
+          echo "strategy=$STRATEGY" >> "$GITHUB_OUTPUT"
+
+  deployment-decision:
+    needs: cloudchange-analysis
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.cloudchange-analysis.outputs.requires_approval == 'True' && 'production-approval' || 'development' }}
+    steps:
+      - name: Proceed with Deployment
+        run: |
+          echo "Deployment Strategy: ${{ needs.cloudchange-analysis.outputs.strategy }}"
+          echo "Requires Approval: ${{ needs.cloudchange-analysis.outputs.requires_approval }}"
+          echo "Deployment logic simulated."
+          # If we reach here, we are either automatically approved (development env) 
+          # or manually approved (production-approval env).

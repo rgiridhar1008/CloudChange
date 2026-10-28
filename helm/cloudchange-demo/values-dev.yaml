@@ -1,0 +1,13 @@
+# Overrides for Development
+global:
+  logLevel: "DEBUG"
+
+services:
+  api-gateway:
+    replicaCount: 1
+  order:
+    replicaCount: 1
+  payment:
+    replicaCount: 1
+  user:
+    replicaCount: 1

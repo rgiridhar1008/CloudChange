@@ -1,0 +1,109 @@
+# Default values for cloudchange-demo.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  namespace: cloudchange-test
+  logLevel: "INFO"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 15-alpine
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  port: 5432
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+  secrets:
+    user: "cloudchange_user"
+    password: "cloudchange_pass"
+    db: "cloudchange_db"
+
+services:
+  frontend:
+    image:
+      repository: cloudchange-frontend
+      tag: latest
+      pullPolicy: Never
+    replicaCount: 1
+    port: 80
+    resources:
+      requests:
+        memory: "32Mi"
+        cpu: "10m"
+      limits:
+        memory: "64Mi"
+        cpu: "50m"
+
+  api-gateway:
+    image:
+      repository: cloudchange-api-gateway
+      tag: latest
+      pullPolicy: Never
+    replicaCount: 2
+    port: 8000
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+
+  order:
+    image:
+      repository: cloudchange-order-service
+      tag: latest
+      pullPolicy: Never
+    replicaCount: 2
+    port: 8003
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+
+  payment:
+    image:
+      repository: cloudchange-payment-service
+      tag: latest
+      pullPolicy: Never
+    replicaCount: 2
+    port: 8002
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+
+  user:
+    image:
+      repository: cloudchange-user-service
+      tag: latest
+      pullPolicy: Never
+    replicaCount: 2
+    port: 8001
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"

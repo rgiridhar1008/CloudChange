@@ -1,0 +1,27 @@
+{
+    "timestamp": "2026-09-12T17:48:32.347398",
+    "runs": [
+        {
+            "strategy": "Conventional",
+            "deployment_failures": 1,
+            "rollback_occurrence": 1,
+            "downtime_seconds": 7.02,
+            "detection_time_seconds": 5.01,
+            "deployment_time_seconds": 7.02,
+            "analysis_time_seconds": 0,
+            "resource_overhead_percent": 0,
+            "impact_prediction_accuracy": 0
+        },
+        {
+            "strategy": "CloudChange",
+            "deployment_failures": 1,
+            "rollback_occurrence": 1,
+            "downtime_seconds": 0.0,
+            "detection_time_seconds": 0.01,
+            "deployment_time_seconds": 0.01,
+            "analysis_time_seconds": 0.0,
+            "resource_overhead_percent": 5,
+            "impact_prediction_accuracy": 100
+        }
+    ]
+}

@@ -1,0 +1,23 @@
+# Overrides for Production
+global:
+  logLevel: "WARN"
+
+postgres:
+  replicaCount: 1
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+services:
+  api-gateway:
+    replicaCount: 5
+  order:
+    replicaCount: 5
+  payment:
+    replicaCount: 5
+  user:
+    replicaCount: 5

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: cloudchange-test
+data:
+  LOG_LEVEL: "INFO"
+  DB_HOST: "postgres-service"
+  USER_SERVICE_URL: "http://user-service:8001"
+  PAYMENT_SERVICE_URL: "http://payment-service:8002"
+  ORDER_SERVICE_URL: "http://order-service:8003"

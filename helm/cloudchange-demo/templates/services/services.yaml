@@ -1,0 +1,18 @@
+{{- range $name, $service := .Values.services }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}-service
+  namespace: {{ $.Values.global.namespace }}
+spec:
+  {{- if eq $name "frontend" }}
+  type: NodePort
+  {{- end }}
+  selector:
+    app: {{ $name }}-service
+  ports:
+    - protocol: TCP
+      port: {{ $service.port }}
+      targetPort: {{ $service.port }}
+---
+{{- end }}

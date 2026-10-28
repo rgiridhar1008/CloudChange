@@ -1,0 +1,36 @@
+{
+  "title": "CloudChange Services Dashboard",
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "CPU Usage (mCores)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"default\"}[5m])) by (container) * 1000",
+          "legendFormat": "{{container}}"
+        }
+      ]
+    },
+    {
+      "title": "Memory Usage (MB)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"default\"}) by (container) / 1024 / 1024",
+          "legendFormat": "{{container}}"
+        }
+      ]
+    },
+    {
+      "title": "Error Rate (%)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])) * 100"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 30
+}
