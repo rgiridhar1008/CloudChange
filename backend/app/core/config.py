@@ -1,10 +1,16 @@
+import os
+import tempfile
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+_tmp_db = (Path(tempfile.gettempdir()) / "cloudchange.db").resolve().as_posix()
+_default_db = f"sqlite:///{_tmp_db}" if os.getenv("VERCEL") else "sqlite:///./cloudchange.db"
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "CloudChange"
     API_V1_STR: str = "/api/v1"
-    FRONTEND_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
-    DATABASE_URL: str = "sqlite:///./cloudchange.db"
+    FRONTEND_ORIGINS: str = "http://localhost:3000,http://localhost:5173,*"
+    DATABASE_URL: str = _default_db
     LLM_API_KEY: str | None = None
     
     # Database
