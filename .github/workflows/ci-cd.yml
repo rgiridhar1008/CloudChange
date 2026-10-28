@@ -64,7 +64,7 @@ jobs:
 
       # Dependencies (requirements.txt, package-lock.json) + hardcoded secrets + misconfigurations
       - name: Trivy scan (SARIF report)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: fs
           scan-ref: .
@@ -85,7 +85,7 @@ jobs:
           category: trivy-fs
 
       - name: Trivy gate (fail on CRITICAL/HIGH)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: fs
           scan-ref: .
@@ -97,7 +97,7 @@ jobs:
           exit-code: "1"
 
       - name: Trivy IaC scan (Kubernetes manifests, Helm chart, Dockerfiles)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           scan-type: config
           scan-ref: .
@@ -125,7 +125,7 @@ jobs:
         run: docker build -t cloudchange-${{ matrix.service }}:${{ github.sha }} ./${{ matrix.service }}
 
       - name: Trivy image scan (SARIF report)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: cloudchange-${{ matrix.service }}:${{ github.sha }}
           format: sarif
@@ -144,7 +144,7 @@ jobs:
           category: trivy-${{ matrix.service }}
 
       - name: Trivy image gate (fail on CRITICAL/HIGH)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: cloudchange-${{ matrix.service }}:${{ github.sha }}
           format: table

@@ -10,3 +10,4 @@ if str(backend_dir) not in sys.path:
 os.environ["VERCEL"] = "1"
 
 from app.main import app
+
