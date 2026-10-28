@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Any
 from app.schemas.change_detection import ChangeItem
 from app.schemas.dependency_analysis import ImpactResponse
 from app.schemas.risk_analysis import RiskFactor, RiskResponse
@@ -6,9 +6,84 @@ from app.modules.risk_analysis.blast_radius import BlastRadiusCalculator
 from app.core.database import SessionLocal
 from app.models.risk_rule import RiskRule
 
+DEFAULT_RULES_DATA = [
+    {
+        "rule_name": "Replica Reduction",
+        "change_type": "REPLICA_REDUCTION",
+        "score": 20,
+        "path_keyword": None,
+        "reason_template": "Replicas reduced from {old} to {new}"
+    },
+    {
+        "rule_name": "Memory Reduction",
+        "change_type": "MEMORY_REDUCTION",
+        "score": 20,
+        "path_keyword": None,
+        "reason_template": "Memory limits/requests reduced from {old} to {new}"
+    },
+    {
+        "rule_name": "Missing Probe",
+        "change_type": "REMOVED",
+        "path_keyword": "probe",
+        "score": 15,
+        "reason_template": "Health probe removed at path: {path}"
+    },
+    {
+        "rule_name": "Missing Liveness",
+        "change_type": "REMOVED",
+        "path_keyword": "liveness",
+        "score": 15,
+        "reason_template": "Health probe removed at path: {path}"
+    },
+    {
+        "rule_name": "Missing Readiness",
+        "change_type": "REMOVED",
+        "path_keyword": "readiness",
+        "score": 15,
+        "reason_template": "Health probe removed at path: {path}"
+    },
+    {
+        "rule_name": "Security Context Modified",
+        "change_type": "MODIFIED",
+        "path_keyword": "securitycontext",
+        "score": 10,
+        "reason_template": "Modified security context at path: {path}"
+    },
+    {
+        "rule_name": "Privileged Escapation",
+        "change_type": "MODIFIED",
+        "path_keyword": "privileged",
+        "score": 10,
+        "reason_template": "Modified security context at path: {path}"
+    }
+]
+
 class RiskEngine:
     def __init__(self, blast_calculator: BlastRadiusCalculator):
         self.blast_calculator = blast_calculator
+
+    def _get_rules(self) -> List[Any]:
+        rules = []
+        try:
+            from app.core.database import Base, engine as db_engine
+            Base.metadata.create_all(bind=db_engine)
+            db = SessionLocal()
+            rules = db.query(RiskRule).all()
+            if not rules:
+                for r_data in DEFAULT_RULES_DATA:
+                    db.add(RiskRule(**r_data))
+                db.commit()
+                rules = db.query(RiskRule).all()
+            db.close()
+        except Exception:
+            pass
+
+        if not rules:
+            class InMemRule:
+                def __init__(self, **kwargs):
+                    self.__dict__.update(kwargs)
+            rules = [InMemRule(**r_data) for r_data in DEFAULT_RULES_DATA]
+        return rules
 
     def evaluate(self, changed_resource: str, changes: List[ChangeItem], impact: ImpactResponse) -> RiskResponse:
         factors: List[RiskFactor] = []
@@ -16,10 +91,8 @@ class RiskEngine:
         
         blast_radius = self.blast_calculator.calculate(impact)
         
-        # Load rules from DB
-        db = SessionLocal()
-        rules = db.query(RiskRule).all()
-        db.close()
+        # Load rules from DB with fallback
+        rules = self._get_rules()
         
         matched_changes = set()
         for rule in rules:
