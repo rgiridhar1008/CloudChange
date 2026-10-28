@@ -8,6 +8,12 @@ set -euo pipefail
 
 OUT_FILE="${1:-/dev/stdout}"
 RESOURCE="${2:-payment-service}"
+
+# Resolve relative output path to absolute before directory change
+if [[ "$OUT_FILE" != /* && "$OUT_FILE" != /dev/* ]]; then
+  OUT_FILE="$(pwd)/$OUT_FILE"
+fi
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT/backend"
 
@@ -50,3 +56,8 @@ with open(sys.argv[1], 'a') as f:
     f.write(f"requires_approval={d.get('requires_approval', False)}\n")
     f.write(f"strategy={d.get('strategy', 'ROLLING')}\n")
 PY
+
+# Ensure analysis.out exists in both root and backend if needed
+if [[ -f "$OUT_FILE" ]]; then
+  cp "$OUT_FILE" "$ROOT/analysis.out" 2>/dev/null || true
+fi

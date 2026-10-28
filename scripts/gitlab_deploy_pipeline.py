@@ -10,7 +10,7 @@ manual = "  when: manual\n  allow_failure: false\n" if requires_approval else ""
 
 print(f"""stages: [deploy]
 
-deploy:
+execute-deploy:
   stage: deploy
   image: alpine:3.20
   environment:

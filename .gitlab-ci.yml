@@ -177,7 +177,7 @@ deploy:
   stage: deploy
   needs: [cloudchange-analysis]
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH || $CI_COMMIT_BRANCH == "main"
   trigger:
     include:
       - artifact: deploy-pipeline.yml
