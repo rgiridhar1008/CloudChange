@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { LayoutDashboard, Network, ShieldAlert, Rocket, Activity, GitCompare, History, Settings, Bell, Sun, Moon } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { ToastProvider } from './Toast';
+import { api } from '../services/api';
 
 const navigation = [
   { name: 'Overview', to: '/', icon: LayoutDashboard },
@@ -16,6 +17,27 @@ const navigation = [
 
 export const Layout = () => {
   const [theme, setTheme] = useState(localStorage.getItem('cloudchange-theme') || 'dark');
+  const [clusterHealth, setClusterHealth] = useState({ status: 'HEALTHY', cluster: 'minikube' });
+
+  useEffect(() => {
+    let active = true;
+    const fetchCluster = async () => {
+      try {
+        const data = await api.getClusterHealth();
+        if (active && data) {
+          setClusterHealth(data);
+        }
+      } catch (e) {
+        // keep previous state
+      }
+    };
+    fetchCluster();
+    const interval = setInterval(fetchCluster, 8000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -74,10 +96,10 @@ export const Layout = () => {
             <div className="p-4 rounded-lg bg-surface border border-border">
               <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">Environment</h4>
               <div className="flex items-center space-x-2 text-sm text-text-primary">
-                <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-                <span className="font-medium">Minikube</span>
+                <div className={cn("w-2 h-2 rounded-full", clusterHealth.status === 'HEALTHY' ? "bg-success animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]")}></div>
+                <span className="font-medium capitalize">{clusterHealth.cluster || 'Minikube'}</span>
               </div>
-              <p className="text-xs text-text-secondary mt-1 pl-4">Status: Connected</p>
+              <p className="text-xs text-text-secondary mt-1 pl-4">Status: {clusterHealth.status === 'HEALTHY' ? 'Connected' : clusterHealth.status}</p>
             </div>
           </div>
         </div>
@@ -104,8 +126,8 @@ export const Layout = () => {
             <button className="hover:text-primary transition-colors"><Settings size={18} /></button>
             <div className="h-4 w-px bg-border"></div>
             <div className="flex items-center bg-surface px-3 py-1.5 rounded-full border border-border shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-success mr-2 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></span> 
-              <span className="text-text-secondary font-medium text-xs uppercase tracking-wide">Cluster Healthy</span>
+              <span className={cn("w-2 h-2 rounded-full mr-2", clusterHealth.status === 'HEALTHY' ? "bg-success shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]")}></span> 
+              <span className="text-text-secondary font-medium text-xs uppercase tracking-wide">Cluster {clusterHealth.status === 'HEALTHY' ? 'Healthy' : 'Disconnected'}</span>
             </div>
           </div>
         </header>

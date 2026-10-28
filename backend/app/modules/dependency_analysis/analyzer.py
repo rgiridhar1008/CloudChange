@@ -1,24 +1,39 @@
 import logging
+import socket
+from urllib.parse import urlparse
 from kubernetes import client, config
 from app.modules.dependency_analysis.graph import DependencyGraph
 from app.schemas.dependency_analysis import Node, Edge
 
 logger = logging.getLogger(__name__)
 
+def _is_host_reachable(url_str: str, timeout: float = 0.25) -> bool:
+    try:
+        parsed = urlparse(url_str)
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except Exception:
+        return False
+
 class DependencyAnalyzer:
     def __init__(self):
         self.graph = DependencyGraph()
 
     def _connect_k8s(self):
-        """Lazily connect to Kubernetes."""
+        """Lazily connect to Kubernetes with fast socket check."""
         try:
             try:
                 config.load_incluster_config()
             except config.ConfigException:
                 config.load_kube_config()
+            host = client.Configuration.get_default_copy().host
+            if not _is_host_reachable(host, timeout=0.25):
+                return None, None
             return client.AppsV1Api(), client.CoreV1Api()
         except Exception as e:
-            logger.warning(f"Could not load kubernetes config for DependencyAnalyzer: {e}")
+            logger.debug(f"Could not load kubernetes config for DependencyAnalyzer: {e}")
             return None, None
 
     def _build_default_graph(self):
@@ -46,63 +61,54 @@ class DependencyAnalyzer:
 
     def build_k8s_graph(self):
         """
-        Builds a graph based on actual Kubernetes resources.
+        Builds a graph based on baseline microservices, enriched with live Kubernetes resources.
         """
+        self._build_default_graph()
+
         apps_v1, core_v1 = self._connect_k8s()
         if not apps_v1 or not core_v1:
-            logger.warning("Kubernetes not connected. Building baseline architecture graph.")
-            self._build_default_graph()
             return self.graph
             
         try:
-            deployments = apps_v1.list_deployment_for_all_namespaces(_request_timeout=2)
-            if not deployments or not deployments.items:
-                self._build_default_graph()
-                return self.graph
-            for dep in deployments.items:
-                namespace = dep.metadata.namespace
-                if namespace in ['kube-system', 'kubernetes-dashboard', 'local-path-storage']:
-                    continue
-                name = dep.metadata.name
-                
-                # Treat deployments as services for the graph
-                node = Node(
-                    id=name, 
-                    label=name, 
-                    type="Service", 
-                    criticality="medium",
-                    namespace=namespace
-                )
-                self.graph.add_node(node)
-                
-            # Naive edge inference based on env vars
-            for dep in deployments.items:
-                namespace = dep.metadata.namespace
-                if namespace in ['kube-system', 'kubernetes-dashboard', 'local-path-storage']:
-                    continue
-                source_name = dep.metadata.name
-                
-                # Check environment variables for strings containing other node names
-                containers = dep.spec.template.spec.containers
-                for container in containers:
-                    if not container.env:
+            deployments = apps_v1.list_deployment_for_all_namespaces(_request_timeout=1)
+            if deployments and deployments.items:
+                for dep in deployments.items:
+                    namespace = dep.metadata.namespace
+                    if namespace in ['kube-system', 'kubernetes-dashboard', 'local-path-storage']:
                         continue
-                    for env in container.env:
-                        if env.value:
-                            for target_node in self.graph.nodes.values():
-                                if target_node.id != source_name and target_node.id in env.value:
-                                    edge = Edge(
-                                        id=f"{source_name}-to-{target_node.id}",
-                                        source=source_name,
-                                        target=target_node.id,
-                                        relationship="depends_on"
-                                    )
-                                    self.graph.add_edge(edge)
-                                    
+                    name = dep.metadata.name
+                    if name not in self.graph.nodes:
+                        node = Node(
+                            id=name, 
+                            label=name, 
+                            type="Service", 
+                            criticality="medium",
+                            namespace=namespace
+                        )
+                        self.graph.add_node(node)
+                        
+                for dep in deployments.items:
+                    namespace = dep.metadata.namespace
+                    if namespace in ['kube-system', 'kubernetes-dashboard', 'local-path-storage']:
+                        continue
+                    source_name = dep.metadata.name
+                    containers = dep.spec.template.spec.containers
+                    for container in containers:
+                        if not container.env:
+                            continue
+                        for env in container.env:
+                            if env.value:
+                                for target_node in self.graph.nodes.values():
+                                    if target_node.id != source_name and target_node.id in env.value:
+                                        edge = Edge(
+                                            id=f"{source_name}-to-{target_node.id}",
+                                            source=source_name,
+                                            target=target_node.id,
+                                            relationship="depends_on"
+                                        )
+                                        self.graph.add_edge(edge)
         except Exception as e:
-            logger.error(f"Failed to fetch k8s workloads: {e}")
-            if not self.graph.nodes:
-                self._build_default_graph()
+            logger.debug(f"Optional k8s workload enrichment skipped: {e}")
 
         return self.graph
 

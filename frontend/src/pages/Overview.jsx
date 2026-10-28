@@ -106,7 +106,7 @@ export const Overview = () => {
         <StatCard 
           title="Cluster Health" 
           value={clusterStatus} 
-          subtitle={overviewData?.cluster?.name || "Disconnected"}
+          subtitle={clusterStatus === 'HEALTHY' ? `${overviewData?.cluster?.name || 'minikube'} (Connected)` : 'Cluster Offline'}
           icon={Activity} 
           colorClass={clusterStatus === 'HEALTHY' ? "text-green-500" : "text-red-500"}
         />
