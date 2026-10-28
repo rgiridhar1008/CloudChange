@@ -351,6 +351,3 @@ Contributions are welcome! Please ensure that:
 
 Distributed under the **MIT License**. See `LICENSE` for details.
 
-<div align="center">
-  <sub>Built with ❤️ by <a href="https://github.com/rgiridhar1008">RACHAKONDA LAKSHMI SAI GIRIDHAR</a></sub>
-</div>
