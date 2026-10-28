@@ -16,7 +16,7 @@ execute-deploy:
   environment:
     name: {env}
 {manual}  script:
-    - echo "Deployment strategy: {strategy}"
-    - echo "Requires approval: {requires_approval}"
-    - echo "Deployment logic simulated."
+    - 'echo "Deployment strategy: {strategy}"'
+    - 'echo "Requires approval: {requires_approval}"'
+    - 'echo "Deployment logic simulated."'
 """)
