@@ -14,3 +14,4 @@ def setup_test_db():
             db.commit()
     finally:
         db.close()
+

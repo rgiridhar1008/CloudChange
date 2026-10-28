@@ -6,6 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN pip install --upgrade pip "setuptools>=80.0.0" "wheel>=0.48.0" "jaraco.context>=6.1.2" "urllib3>=2.8.0" "msgpack>=1.2.3"
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
