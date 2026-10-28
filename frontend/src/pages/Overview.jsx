@@ -19,23 +19,21 @@ const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
 );
 
 const PipelineStage = ({ title, status, isLast, onClick }) => (
-  <div 
+  <div
     className="flex flex-col items-center relative flex-1 cursor-pointer group"
     onClick={onClick}
   >
-    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-lg z-10 transition-transform group-hover:scale-110 ${
-      status === 'complete' ? 'bg-green-500/10 border-green-500 text-green-500' :
-      status === 'active' ? 'bg-blue-500/10 border-blue-500 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)] animate-pulse' :
-      'bg-gray-900 border-gray-700 text-gray-600 group-hover:border-gray-500 group-hover:text-gray-400'
-    }`}>
+    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 shadow-lg z-10 transition-transform group-hover:scale-110 ${status === 'complete' ? 'bg-green-500/10 border-green-500 text-green-500' :
+        status === 'active' ? 'bg-blue-500/10 border-blue-500 text-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)] animate-pulse' :
+          'bg-gray-900 border-gray-700 text-gray-600 group-hover:border-gray-500 group-hover:text-gray-400'
+      }`}>
       {status === 'complete' ? <CheckCircle2 size={20} /> : <Activity size={20} />}
     </div>
-    <span className={`mt-3 text-xs font-bold uppercase tracking-wider transition-colors ${
-      status === 'complete' ? 'text-green-400' :
-      status === 'active' ? 'text-blue-400' :
-      'text-gray-500 group-hover:text-gray-400'
-    }`}>{title}</span>
-    
+    <span className={`mt-3 text-xs font-bold uppercase tracking-wider transition-colors ${status === 'complete' ? 'text-green-400' :
+        status === 'active' ? 'text-blue-400' :
+          'text-gray-500 group-hover:text-gray-400'
+      }`}>{title}</span>
+
     {!isLast && (
       <div className="absolute top-6 left-1/2 w-full h-[2px] -z-0" style={{ transform: 'translateX(24px)' }}>
         <div className={`w-full h-full ${status === 'complete' ? 'bg-green-500/50' : 'bg-gray-800'}`}></div>
@@ -48,7 +46,7 @@ export const Overview = () => {
   const [overviewData, setOverviewData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -60,7 +58,7 @@ export const Overview = () => {
       }
       setLoading(false);
     };
-    
+
     fetchData();
   }, []);
 
@@ -68,10 +66,10 @@ export const Overview = () => {
     // Determine visual pipeline state based on deployment status
     const dStatus = overviewData?.current_deployment?.status;
     if (!dStatus) return 'pending';
-    
+
     if (dStatus === 'SUCCESS') return 'complete';
     if (dStatus === 'FAILED' || dStatus === 'ROLLED_BACK') return 'pending';
-    
+
     switch (stage) {
       case 'change': return 'complete';
       case 'risk': return 'complete';
@@ -103,32 +101,32 @@ export const Overview = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard 
-          title="Cluster Health" 
-          value={clusterStatus} 
+        <StatCard
+          title="Cluster Health"
+          value={clusterStatus}
           subtitle={clusterStatus === 'HEALTHY' ? `${overviewData?.cluster?.name || 'minikube'} (Connected)` : 'Cluster Offline'}
-          icon={Activity} 
+          icon={Activity}
           colorClass={clusterStatus === 'HEALTHY' ? "text-green-500" : "text-red-500"}
         />
-        <StatCard 
-          title="Active Deployments" 
-          value={activeCount.toString()} 
+        <StatCard
+          title="Active Deployments"
+          value={activeCount.toString()}
           subtitle={activeCount > 0 ? 'Canary Rollout Active' : 'No active rollouts'}
-          icon={Rocket} 
+          icon={Rocket}
           colorClass="text-blue-500"
         />
-        <StatCard 
-          title="Average Risk Score" 
-          value={avgRisk.toString()} 
+        <StatCard
+          title="Average Risk Score"
+          value={avgRisk.toString()}
           subtitle="From historical DB"
-          icon={ShieldCheck} 
+          icon={ShieldCheck}
           colorClass="text-yellow-500"
         />
-        <StatCard 
-          title="Detected Changes" 
-          value={detected.toString()} 
+        <StatCard
+          title="Detected Changes"
+          value={detected.toString()}
           subtitle={detected > 0 ? 'Awaiting analysis' : 'No uncommitted changes'}
-          icon={GitPullRequest} 
+          icon={GitPullRequest}
           colorClass="text-purple-500"
         />
       </div>
@@ -166,7 +164,7 @@ export const Overview = () => {
                     <p className="text-lg font-bold text-blue-400">{deployment.strategy}</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm font-medium">
                     <span className="text-gray-300">Traffic Distribution</span>
@@ -187,7 +185,7 @@ export const Overview = () => {
                     <StatusBadge status={deployment.status} />
                     <StatusBadge status={deployment.health} className="bg-transparent" />
                   </div>
-                  <button 
+                  <button
                     onClick={() => navigate('/deployment')}
                     className="flex items-center text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
                   >
@@ -217,7 +215,7 @@ export const Overview = () => {
                   <div className="absolute -left-[35px] top-1 w-4 h-4 bg-surface border-2 border-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
                   <p className="text-sm font-semibold text-text-primary">Canary Deployment Active</p>
                   <p className="text-sm text-text-secondary mt-1">Routing {deployment.traffic?.canary}% traffic to target version of {deployment.service}</p>
-                  <p className="text-xs text-gray-500 mt-2 flex items-center"><Clock size={12} className="mr-1"/> Live</p>
+                  <p className="text-xs text-gray-500 mt-2 flex items-center"><Clock size={12} className="mr-1" /> Live</p>
                 </div>
               )}
               {clusterStatus && (
@@ -225,7 +223,7 @@ export const Overview = () => {
                   <div className="absolute -left-[35px] top-1 w-4 h-4 bg-surface border-2 border-green-500 rounded-full"></div>
                   <p className="text-sm font-semibold text-text-primary">Cluster Status Evaluated</p>
                   <p className="text-sm text-text-secondary mt-1">Cluster marked as {clusterStatus}</p>
-                  <p className="text-xs text-gray-500 mt-2 flex items-center"><Clock size={12} className="mr-1"/> Live</p>
+                  <p className="text-xs text-gray-500 mt-2 flex items-center"><Clock size={12} className="mr-1" /> Live</p>
                 </div>
               )}
               {!deployment && !clusterStatus && (
