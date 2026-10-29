@@ -104,9 +104,9 @@ export const Overview = () => {
         <StatCard
           title="Cluster Health"
           value={clusterStatus}
-          subtitle={clusterStatus === 'HEALTHY' ? `${overviewData?.cluster?.name || 'minikube'} (Connected)` : 'Cluster Offline'}
+          subtitle={clusterStatus === 'HEALTHY' ? `${overviewData?.cluster?.name || 'minikube'} (Connected)` : 'Cluster Offline (Run: minikube start)'}
           icon={Activity}
-          colorClass={clusterStatus === 'HEALTHY' ? "text-green-500" : "text-red-500"}
+          colorClass={clusterStatus === 'HEALTHY' ? "text-green-500" : "text-amber-500"}
         />
         <StatCard
           title="Active Deployments"

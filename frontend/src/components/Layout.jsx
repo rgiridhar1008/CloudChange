@@ -17,7 +17,7 @@ const navigation = [
 
 export const Layout = () => {
   const [theme, setTheme] = useState(localStorage.getItem('cloudchange-theme') || 'dark');
-  const [clusterHealth, setClusterHealth] = useState({ status: 'HEALTHY', cluster: 'minikube' });
+  const [clusterHealth, setClusterHealth] = useState({ status: 'CONNECTING', cluster: 'minikube' });
 
   useEffect(() => {
     let active = true;
@@ -28,11 +28,13 @@ export const Layout = () => {
           setClusterHealth(data);
         }
       } catch (e) {
-        // keep previous state
+        if (active) {
+          setClusterHealth({ status: 'DISCONNECTED', cluster: 'minikube' });
+        }
       }
     };
     fetchCluster();
-    const interval = setInterval(fetchCluster, 8000);
+    const interval = setInterval(fetchCluster, 6000);
     return () => {
       active = false;
       clearInterval(interval);
@@ -96,10 +98,10 @@ export const Layout = () => {
             <div className="p-4 rounded-lg bg-surface border border-border">
               <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">Environment</h4>
               <div className="flex items-center space-x-2 text-sm text-text-primary">
-                <div className={cn("w-2 h-2 rounded-full", clusterHealth.status === 'HEALTHY' ? "bg-success animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]")}></div>
+                <div className={cn("w-2 h-2 rounded-full", clusterHealth.status === 'HEALTHY' ? "bg-success animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]" : clusterHealth.status === 'CONNECTING' ? "bg-amber-400 animate-pulse" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]")}></div>
                 <span className="font-medium capitalize">{clusterHealth.cluster || 'Minikube'}</span>
               </div>
-              <p className="text-xs text-text-secondary mt-1 pl-4">Status: {clusterHealth.status === 'HEALTHY' ? 'Connected' : clusterHealth.status}</p>
+              <p className="text-xs text-text-secondary mt-1 pl-4">Status: {clusterHealth.status === 'HEALTHY' ? 'Connected' : clusterHealth.status === 'CONNECTING' ? 'Checking...' : 'Disconnected'}</p>
             </div>
           </div>
         </div>
@@ -126,8 +128,8 @@ export const Layout = () => {
             <button className="hover:text-primary transition-colors"><Settings size={18} /></button>
             <div className="h-4 w-px bg-border"></div>
             <div className="flex items-center bg-surface px-3 py-1.5 rounded-full border border-border shadow-sm">
-              <span className={cn("w-2 h-2 rounded-full mr-2", clusterHealth.status === 'HEALTHY' ? "bg-success shadow-[0_0_5px_rgba(16,185,129,0.5)]" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]")}></span> 
-              <span className="text-text-secondary font-medium text-xs uppercase tracking-wide">Cluster {clusterHealth.status === 'HEALTHY' ? 'Healthy' : 'Disconnected'}</span>
+              <span className={cn("w-2 h-2 rounded-full mr-2", clusterHealth.status === 'HEALTHY' ? "bg-success shadow-[0_0_5px_rgba(16,185,129,0.5)]" : clusterHealth.status === 'CONNECTING' ? "bg-amber-400 animate-pulse" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]")}></span> 
+              <span className="text-text-secondary font-medium text-xs uppercase tracking-wide">Cluster {clusterHealth.status === 'HEALTHY' ? 'Healthy' : clusterHealth.status === 'CONNECTING' ? 'Checking...' : 'Disconnected'}</span>
             </div>
           </div>
         </header>
