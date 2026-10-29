@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
 import { api } from '../services/api';
-import { Play, Pause, FastForward, RotateCcw, AlertTriangle, Terminal, Rocket, CheckCircle2 } from 'lucide-react';
+import { Play, Pause, FastForward, RotateCcw, AlertTriangle, Terminal, Rocket, CheckCircle2, ChevronDown } from 'lucide-react';
+import { AVAILABLE_SERVICES } from '../utils/services';
 import { cn } from '../utils/cn';
 import { ConfirmationDialog } from '../components/ConfirmationDialog';
 import { StatusBadge } from '../components/StatusBadge';
@@ -13,6 +14,10 @@ export const Deployment = () => {
   const [loading, setLoading] = useState(false);
   const [showRollbackConfirm, setShowRollbackConfirm] = useState(false);
   const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
+
+  useEffect(() => {
+    fetchStatus(true);
+  }, [serviceName]);
 
   const fetchStatus = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -103,10 +108,27 @@ export const Deployment = () => {
         onCancel={() => setShowPromoteConfirm(false)}
       />
 
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-text-primary mb-2">Canary Deployment Engine</h2>
           <p className="text-text-secondary">Control active rollouts, monitor traffic distribution, and manage risk.</p>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <span className="text-xs text-text-secondary font-medium mr-1">Select Service:</span>
+            {AVAILABLE_SERVICES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setServiceName(s.id)}
+                className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                  serviceName === s.id
+                    ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-semibold shadow-sm shadow-blue-500/20 scale-105'
+                    : 'bg-surface border-border text-text-secondary hover:text-text-primary hover:border-gray-600'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center space-x-3">
           <div className="relative">
