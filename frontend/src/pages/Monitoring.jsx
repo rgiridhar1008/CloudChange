@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
 import { api } from '../services/api';
-import { Activity, Cpu, HardDrive, Zap, RefreshCw, AlertTriangle, Terminal, Network, ShieldCheck } from 'lucide-react';
+import { Activity, Cpu, HardDrive, Zap, RefreshCw, AlertTriangle, Terminal, Network, ShieldCheck, ChevronDown } from 'lucide-react';
+import { AVAILABLE_SERVICES } from '../utils/services';
 import { StatusBadge } from '../components/StatusBadge';
 import { cn } from '../utils/cn';
 
@@ -85,14 +86,19 @@ export const Monitoring = () => {
       <Card className="bg-surface border-border shadow-xl">
         <CardContent className="p-4 flex items-center space-x-4">
           <div className="relative flex-1 max-w-sm">
-            <input 
-              type="text" 
+            <select 
               value={serviceName}
-              onChange={(e) => setServiceName(e.target.value)}
-              className="w-full bg-black/50 border border-border rounded-lg pl-10 pr-4 py-2 text-text-primary text-sm focus:outline-none focus:border-blue-500 transition-colors"
-              placeholder="Target Service (e.g. payment-service)"
-            />
+              onChange={(e) => { setServiceName(e.target.value); }}
+              className="w-full bg-surface border border-border rounded-lg pl-10 pr-8 py-2 text-text-primary text-sm font-medium focus:outline-none focus:border-blue-500 transition-colors appearance-none cursor-pointer"
+            >
+              {AVAILABLE_SERVICES.map((s) => (
+                <option key={s.id} value={s.id} className="bg-gray-900 text-white">
+                  {s.label} ({s.desc.split('&')[0].trim()})
+                </option>
+              ))}
+            </select>
             <Terminal size={16} className="absolute left-3 top-2.5 text-gray-500" />
+            <ChevronDown size={14} className="absolute right-3 top-3 pointer-events-none text-text-secondary" />
           </div>
           <button 
             onClick={fetchMetrics} 

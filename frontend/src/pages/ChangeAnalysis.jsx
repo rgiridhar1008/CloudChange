@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/Card';
-import { GitCompare, ShieldAlert, Rocket, ChevronRight, FileCode, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
+import { GitCompare, ShieldAlert, Rocket, ChevronRight, FileCode, CheckCircle2, Info, AlertTriangle, ChevronDown } from 'lucide-react';
+import { AVAILABLE_SERVICES, SERVICE_PRESETS } from '../utils/services';
 import { api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { RiskMeter } from '../components/RiskMeter';
@@ -44,6 +45,16 @@ spec:
           requests:
             memory: "128Mi"
 `);
+
+  const handleSelectService = (name) => {
+    setResourceName(name);
+    if (SERVICE_PRESETS[name]) {
+      setOldManifest(SERVICE_PRESETS[name].old);
+      setNewManifest(SERVICE_PRESETS[name].new);
+    }
+    setResult(null);
+    setError(null);
+  };
 
   const navigate = useNavigate();
 
@@ -93,19 +104,43 @@ spec:
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-text-primary mb-2">Change Analysis</h2>
           <p className="text-text-secondary">Detect configuration drifts and evaluate potential deployment impact.</p>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <span className="text-xs text-text-secondary font-medium mr-1">Select Service:</span>
+            {AVAILABLE_SERVICES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => handleSelectService(s.id)}
+                className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                  resourceName === s.id
+                    ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-semibold shadow-sm shadow-blue-500/20 scale-105'
+                    : 'bg-surface border-border text-text-secondary hover:text-text-primary hover:border-gray-600'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex items-center space-x-3">
-          <input 
-            type="text" 
-            value={resourceName}
-            onChange={(e) => setResourceName(e.target.value)}
-            className="bg-black/50 border border-border rounded-lg px-4 py-2 text-text-primary text-sm focus:outline-none focus:border-blue-500 w-64"
-            placeholder="Resource Name"
-          />
+          <div className="relative">
+            <select
+              value={resourceName}
+              onChange={(e) => handleSelectService(e.target.value)}
+              className="bg-surface border border-border rounded-lg pl-3 pr-8 py-2 text-text-primary text-sm font-medium focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:border-gray-600 transition-colors shadow-sm w-56"
+            >
+              {AVAILABLE_SERVICES.map((s) => (
+                <option key={s.id} value={s.id} className="bg-gray-900 text-white">
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-3 pointer-events-none text-text-secondary" />
+          </div>
           <button 
             onClick={handleAnalyze}
             disabled={loading}

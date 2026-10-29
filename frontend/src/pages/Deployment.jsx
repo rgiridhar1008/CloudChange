@@ -110,14 +110,19 @@ export const Deployment = () => {
         </div>
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <input 
-              type="text" 
+            <select 
               value={serviceName}
               onChange={(e) => setServiceName(e.target.value)}
-              className="bg-black/50 border border-border rounded-lg pl-10 pr-4 py-2 text-text-primary text-sm focus:outline-none focus:border-blue-500 w-64"
-              placeholder="Service Name"
-            />
+              className="bg-surface border border-border rounded-lg pl-10 pr-8 py-2 text-text-primary text-sm font-medium focus:outline-none focus:border-blue-500 w-64 appearance-none cursor-pointer"
+            >
+              {AVAILABLE_SERVICES.map((s) => (
+                <option key={s.id} value={s.id} className="bg-gray-900 text-white">
+                  {s.label}
+                </option>
+              ))}
+            </select>
             <Terminal size={16} className="absolute left-3 top-2.5 text-gray-500" />
+            <ChevronDown size={14} className="absolute right-3 top-3 pointer-events-none text-text-secondary" />
           </div>
           <button 
             onClick={() => fetchStatus(false)} 
