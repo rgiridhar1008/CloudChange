@@ -72,7 +72,7 @@ export const Deployment = () => {
   };
 
   const handleRollback = async () => {
-    setShowRollbackConfirm(false);
+    setShowPromoteConfirm(false);
     setLoading(true);
     try {
       const res = await api.rollbackDeployment(serviceName);
@@ -110,16 +110,16 @@ export const Deployment = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-text-primary mb-2">Canary Deployment Engine</h2>
-          <p className="text-text-secondary">Control active rollouts, monitor traffic distribution, and manage risk.</p>
-          <div className="flex flex-wrap items-center gap-2 mt-3">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-1 sm:mb-2">Canary Deployment Engine</h2>
+          <p className="text-sm sm:text-base text-text-secondary">Control active rollouts, monitor traffic distribution, and manage risk.</p>
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3">
             <span className="text-xs text-text-secondary font-medium mr-1">Select Service:</span>
             {AVAILABLE_SERVICES.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => setServiceName(s.id)}
-                className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                className={`text-xs px-2.5 sm:px-3 py-1 rounded-full border transition-all ${
                   serviceName === s.id
                     ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-semibold shadow-sm shadow-blue-500/20 scale-105'
                     : 'bg-surface border-border text-text-secondary hover:text-text-primary hover:border-gray-600'
@@ -130,12 +130,12 @@ export const Deployment = () => {
             ))}
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
             <select 
               value={serviceName}
               onChange={(e) => setServiceName(e.target.value)}
-              className="bg-surface border border-border rounded-lg pl-10 pr-8 py-2 text-text-primary text-sm font-medium focus:outline-none focus:border-blue-500 w-64 appearance-none cursor-pointer"
+              className="bg-surface border border-border rounded-lg pl-10 pr-8 py-2 text-text-primary text-sm font-medium focus:outline-none focus:border-blue-500 w-full appearance-none cursor-pointer"
             >
               {AVAILABLE_SERVICES.map((s) => (
                 <option key={s.id} value={s.id} className="bg-gray-900 text-white">
@@ -148,7 +148,7 @@ export const Deployment = () => {
           </div>
           <button 
             onClick={() => fetchStatus(false)} 
-            className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-text-primary rounded-lg text-sm font-medium transition-colors"
+            className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-text-primary rounded-lg text-sm font-medium transition-colors w-full sm:w-auto text-center"
           >
             Connect
           </button>
@@ -167,33 +167,33 @@ export const Deployment = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-10 pb-12 px-10">
+            <CardContent className="pt-8 sm:pt-10 pb-8 sm:pb-12 px-4 sm:px-10">
               <div className="relative w-full h-16 bg-gray-900 rounded-2xl overflow-hidden flex border border-border shadow-inner">
                 {/* Old Version */}
                 <div 
-                  className="h-full bg-slate-800 flex items-center px-6 transition-all duration-1000 ease-in-out relative overflow-hidden group"
+                  className="h-full bg-slate-800 flex items-center px-3 sm:px-6 transition-all duration-1000 ease-in-out relative overflow-hidden group"
                   style={{ width: `${status?.traffic?.stable ?? (100 - (status?.current_percentage || 0))}%` }}
                 >
                   <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 mix-blend-overlay"></div>
-                  <span className="text-xl font-bold text-slate-300 z-10 whitespace-nowrap">v1.0 (Stable)</span>
-                  <span className="absolute right-6 text-3xl font-black text-slate-700/50 group-hover:text-slate-600 transition-colors z-10">
+                  <span className="text-sm sm:text-xl font-bold text-slate-300 z-10 whitespace-nowrap">v1.0 (Stable)</span>
+                  <span className="absolute right-3 sm:right-6 text-xl sm:text-3xl font-black text-slate-700/50 group-hover:text-slate-600 transition-colors z-10">
                     {status?.traffic?.stable ?? (100 - (status?.current_percentage || 0))}%
                   </span>
                 </div>
                 
                 {/* New Version */}
                 <div 
-                  className="h-full bg-blue-600 flex items-center justify-end px-6 transition-all duration-1000 ease-in-out relative overflow-hidden group shadow-[inset_4px_0_15px_rgba(0,0,0,0.3)]"
+                  className="h-full bg-blue-600 flex items-center justify-end px-3 sm:px-6 transition-all duration-1000 ease-in-out relative overflow-hidden group shadow-[inset_4px_0_15px_rgba(0,0,0,0.3)]"
                   style={{ width: `${status?.traffic?.canary ?? (status?.current_percentage || 0)}%` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-blue-600"></div>
                   <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent)', backgroundSize: '40px 40px', animation: 'stripes 2s linear infinite' }}></div>
                   <style>{`@keyframes stripes { from { background-position: 40px 0; } to { background-position: 0 0; } }`}</style>
                   
-                  <span className="absolute left-6 text-3xl font-black text-blue-900/40 group-hover:text-blue-900/60 transition-colors z-10">
+                  <span className="absolute left-3 sm:left-6 text-xl sm:text-3xl font-black text-blue-900/40 group-hover:text-blue-900/60 transition-colors z-10">
                     {status?.traffic?.canary ?? (status?.current_percentage || 0)}%
                   </span>
-                  <span className="text-xl font-bold text-text-primary z-10 whitespace-nowrap drop-shadow-md">v2.0 (Canary)</span>
+                  <span className="text-sm sm:text-xl font-bold text-text-primary z-10 whitespace-nowrap drop-shadow-md">v2.0 (Canary)</span>
                 </div>
               </div>
 
@@ -208,46 +208,46 @@ export const Deployment = () => {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <button 
               onClick={handleStart} 
               disabled={loading || status?.status === 'IN_PROGRESS' || status?.status === 'SUCCESS'} 
-              className="flex flex-col justify-center items-center p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="flex flex-col justify-center items-center p-4 sm:p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
             >
-              <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 group-hover:bg-blue-500/20 transition-colors">
-                <Play className="text-blue-500 fill-current" size={20} />
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-blue-500/20 transition-colors">
+                <Play className="text-blue-500 fill-current" size={18} />
               </div>
-              <span className="font-semibold text-sm">Start Canary</span>
+              <span className="font-semibold text-xs sm:text-sm">Start Canary</span>
             </button>
             <button 
               onClick={handleStop} 
               disabled={loading || status?.status !== 'IN_PROGRESS'} 
-              className="flex flex-col justify-center items-center p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="flex flex-col justify-center items-center p-4 sm:p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
             >
-              <div className="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center mb-3 group-hover:bg-yellow-500/20 transition-colors">
-                <Pause className="text-yellow-500 fill-current" size={20} />
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-yellow-500/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-yellow-500/20 transition-colors">
+                <Pause className="text-yellow-500 fill-current" size={18} />
               </div>
-              <span className="font-semibold text-sm">Pause Rollout</span>
+              <span className="font-semibold text-xs sm:text-sm">Pause Rollout</span>
             </button>
             <button 
               onClick={() => setShowPromoteConfirm(true)} 
               disabled={loading || (status?.status !== 'IN_PROGRESS' && status?.status !== 'PAUSED')} 
-              className="flex flex-col justify-center items-center p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="flex flex-col justify-center items-center p-4 sm:p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
             >
-              <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3 group-hover:bg-green-500/20 transition-colors">
-                <FastForward className="text-green-500 fill-current" size={20} />
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-green-500/20 transition-colors">
+                <FastForward className="text-green-500 fill-current" size={18} />
               </div>
-              <span className="font-semibold text-sm">Force Promote</span>
+              <span className="font-semibold text-xs sm:text-sm">Force Promote</span>
             </button>
             <button 
               onClick={() => setShowRollbackConfirm(true)} 
               disabled={loading || !status || status?.status === 'ROLLED_BACK'} 
-              className="flex flex-col justify-center items-center p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
+              className="flex flex-col justify-center items-center p-4 sm:p-6 bg-surface hover:bg-gray-800 border border-border rounded-xl text-text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
             >
-              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-3 group-hover:bg-red-500/20 transition-colors">
-                <RotateCcw className="text-red-500" size={20} />
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-red-500/20 transition-colors">
+                <RotateCcw className="text-red-500" size={18} />
               </div>
-              <span className="font-semibold text-sm">Abort & Rollback</span>
+              <span className="font-semibold text-xs sm:text-sm">Abort & Rollback</span>
             </button>
           </div>
         </div>

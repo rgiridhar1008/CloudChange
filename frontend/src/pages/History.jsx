@@ -31,40 +31,40 @@ export const History = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-text-primary mb-2">Audit History</h2>
-          <p className="text-text-secondary">Comprehensive log of past deployments, rollbacks, and risk assessments.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-1 sm:mb-2">Audit History</h2>
+          <p className="text-sm sm:text-base text-text-secondary">Comprehensive log of past deployments, rollbacks, and risk assessments.</p>
         </div>
-        <div className="flex space-x-3">
-          <button className="flex items-center px-4 py-2 bg-surface hover:bg-gray-800 border border-border rounded-lg text-gray-300 text-sm font-medium transition-colors">
-            <Calendar size={16} className="mr-2 text-gray-500" /> Last 30 Days
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <button className="flex-1 sm:flex-initial flex items-center justify-center px-3 sm:px-4 py-2 bg-surface hover:bg-gray-800 border border-border rounded-lg text-gray-300 text-xs sm:text-sm font-medium transition-colors">
+            <Calendar size={15} className="mr-2 text-gray-500" /> Last 30 Days
           </button>
-          <button className="flex items-center px-4 py-2 bg-surface hover:bg-gray-800 border border-border rounded-lg text-gray-300 text-sm font-medium transition-colors">
-            <Download size={16} className="mr-2 text-gray-500" /> Export CSV
+          <button className="flex-1 sm:flex-initial flex items-center justify-center px-3 sm:px-4 py-2 bg-surface hover:bg-gray-800 border border-border rounded-lg text-gray-300 text-xs sm:text-sm font-medium transition-colors">
+            <Download size={15} className="mr-2 text-gray-500" /> Export CSV
           </button>
         </div>
       </div>
 
       <Card className="bg-surface border-border shadow-xl overflow-hidden">
-        <div className="p-4 border-b border-border/50 bg-surface-secondary flex justify-between items-center">
-          <div className="relative">
+        <div className="p-4 border-b border-border/50 bg-surface-secondary flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 max-w-full sm:max-w-xs">
             <Search size={16} className="absolute left-3 top-2.5 text-gray-500" />
             <input 
               type="text"
               placeholder="Search by service or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-black/50 border border-border rounded-lg pl-10 pr-4 py-2 text-text-primary text-sm focus:outline-none focus:border-blue-500 w-72 transition-colors"
+              className="w-full bg-black/50 border border-border rounded-lg pl-10 pr-4 py-2 text-text-primary text-sm focus:outline-none focus:border-blue-500 transition-colors"
             />
           </div>
-          <button className="flex items-center px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-border rounded-lg text-gray-300 text-sm font-medium transition-colors">
+          <button className="flex items-center justify-center px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-border rounded-lg text-gray-300 text-sm font-medium transition-colors">
             <Filter size={16} className="mr-2" /> Filters
           </button>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-left text-sm min-w-[640px]">
             <thead className="bg-background/50 text-gray-500 uppercase tracking-wider text-xs border-b border-border/80">
               <tr>
                 <th className="px-6 py-4 font-semibold">Deployment ID</th>

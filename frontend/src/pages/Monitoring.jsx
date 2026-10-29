@@ -8,7 +8,7 @@ import { cn } from '../utils/cn';
 
 const MetricCard = ({ title, value, unit, icon: Icon, color, trend = "stable" }) => (
   <Card className="bg-surface border-border shadow-xl overflow-hidden group">
-    <CardContent className="p-6 relative">
+    <CardContent className="p-5 sm:p-6 relative">
       <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${color.replace('text-', 'bg-')}/5 group-hover:${color.replace('text-', 'bg-')}/10 transition-colors`}></div>
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className={`p-2.5 rounded-lg bg-gray-900 border border-border ${color}`}>
@@ -20,7 +20,7 @@ const MetricCard = ({ title, value, unit, icon: Icon, color, trend = "stable" })
       <div className="relative z-10">
         <h3 className="text-text-secondary text-xs font-bold uppercase tracking-wider mb-1">{title}</h3>
         <div className="flex items-baseline space-x-1">
-          <span className="text-3xl font-bold text-text-primary tracking-tight">{value}</span>
+          <span className="text-2xl sm:text-3xl font-bold text-text-primary tracking-tight">{value}</span>
           <span className="text-sm font-medium text-gray-500">{unit}</span>
         </div>
       </div>
@@ -65,10 +65,10 @@ export const Monitoring = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-text-primary mb-2">Live Observability</h2>
-          <p className="text-text-secondary">Real-time metrics, health checks, and pod status.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-1 sm:mb-2">Live Observability</h2>
+          <p className="text-sm sm:text-base text-text-secondary">Real-time metrics, health checks, and pod status.</p>
         </div>
       </div>
 
@@ -84,8 +84,8 @@ export const Monitoring = () => {
       )}
 
       <Card className="bg-surface border-border shadow-xl">
-        <CardContent className="p-4 flex items-center space-x-4">
-          <div className="relative flex-1 max-w-sm">
+        <CardContent className="p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 w-full sm:max-w-sm">
             <select 
               value={serviceName}
               onChange={(e) => { setServiceName(e.target.value); }}
@@ -103,7 +103,7 @@ export const Monitoring = () => {
           <button 
             onClick={fetchMetrics} 
             disabled={loading} 
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary rounded-lg text-sm font-medium transition-colors flex items-center disabled:opacity-50"
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary rounded-lg text-sm font-medium transition-colors flex items-center justify-center disabled:opacity-50 w-full sm:w-auto"
           >
             <RefreshCw size={16} className={cn("mr-2", loading && "animate-spin")} /> 
             Sync Telemetry
@@ -113,16 +113,16 @@ export const Monitoring = () => {
 
       {health && (
         <div className={cn(
-          "p-6 rounded-xl border flex items-start space-x-4 shadow-xl",
+          "p-5 sm:p-6 rounded-xl border flex items-start space-x-4 shadow-xl",
           health.health_status === 'HEALTHY' ? 'bg-green-900/10 border-green-900/50' : 'bg-red-900/10 border-red-900/50'
         )}>
           <div className={cn(
-            "p-3 rounded-full",
+            "p-3 rounded-full flex-shrink-0",
             health.health_status === 'HEALTHY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
           )}>
             {health.health_status === 'HEALTHY' ? <ShieldCheck size={24} /> : <AlertTriangle size={24} />}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h3 className={cn(
               "font-bold text-lg mb-1 tracking-tight",
               health.health_status === 'HEALTHY' ? 'text-green-400' : 'text-red-400'
@@ -132,7 +132,7 @@ export const Monitoring = () => {
             {health.failure_reasons.length > 0 ? (
               <ul className="mt-3 space-y-2">
                 {health.failure_reasons.map((reason, i) => (
-                  <li key={i} className="text-sm text-red-300 flex items-center bg-red-950/30 p-2 rounded border border-red-900/30 font-mono">
+                  <li key={i} className="text-sm text-red-300 flex items-center bg-red-950/30 p-2 rounded border border-red-900/30 font-mono break-words">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0"></span>
                     {reason}
                   </li>
@@ -146,7 +146,7 @@ export const Monitoring = () => {
       )}
 
       {metrics && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           <MetricCard 
             title="CPU Usage" 
             value={metrics.cpu.value} 

@@ -6,14 +6,14 @@ import { StatusBadge } from '../components/StatusBadge';
 import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
-  <div className="bg-surface border border-border rounded-xl p-6 flex items-start space-x-4 shadow-lg hover:border-gray-700 transition-colors">
-    <div className={`p-3 rounded-lg bg-gray-900/50 border border-border ${colorClass}`}>
+  <div className="bg-surface border border-border rounded-xl p-5 sm:p-6 flex items-start space-x-4 shadow-lg hover:border-gray-700 transition-colors">
+    <div className={`p-3 rounded-lg bg-gray-900/50 border border-border flex-shrink-0 ${colorClass}`}>
       <Icon size={24} />
     </div>
-    <div>
-      <p className="text-sm font-medium text-text-secondary mb-1">{title}</p>
-      <h3 className="text-2xl font-bold text-text-primary tracking-tight">{value}</h3>
-      <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-medium text-text-secondary mb-1 truncate">{title}</p>
+      <h3 className="text-2xl font-bold text-text-primary tracking-tight truncate">{value}</h3>
+      <p className="text-xs text-gray-500 mt-1 truncate">{subtitle}</p>
     </div>
   </div>
 );
@@ -63,7 +63,6 @@ export const Overview = () => {
   }, []);
 
   const getPipelineStatus = (stage) => {
-    // Determine visual pipeline state based on deployment status
     const dStatus = overviewData?.current_deployment?.status;
     if (!dStatus) return 'pending';
 
@@ -83,7 +82,10 @@ export const Overview = () => {
   if (loading) {
     return <div className="animate-pulse space-y-6">
       <div className="h-8 bg-gray-800 rounded w-1/4"></div>
-      <div className="grid grid-cols-4 gap-6"><div className="h-32 bg-gray-800 rounded-xl"></div><div className="h-32 bg-gray-800 rounded-xl"></div></div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <div className="h-32 bg-gray-800 rounded-xl"></div>
+        <div className="h-32 bg-gray-800 rounded-xl"></div>
+      </div>
     </div>;
   }
 
@@ -94,13 +96,13 @@ export const Overview = () => {
   const deployment = overviewData?.current_deployment;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-500">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-text-primary mb-2">Command Center</h2>
-        <p className="text-text-secondary">Monitor changes, deployment risk, cluster health, and rollout activity.</p>
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-1 sm:mb-2">Command Center</h2>
+        <p className="text-sm sm:text-base text-text-secondary">Monitor changes, deployment risk, cluster health, and rollout activity.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="Cluster Health"
           value={clusterStatus}
@@ -135,8 +137,8 @@ export const Overview = () => {
         <CardHeader className="border-b border-border/50 pb-4">
           <CardTitle>Delivery Pipeline</CardTitle>
         </CardHeader>
-        <CardContent className="pt-8 pb-6">
-          <div className="flex justify-between items-start w-full px-4">
+        <CardContent className="pt-8 pb-6 overflow-x-auto">
+          <div className="flex justify-between items-start min-w-[520px] md:min-w-0 w-full px-4">
             <PipelineStage title="Change" status={getPipelineStatus('change')} onClick={() => navigate('/change')} />
             <PipelineStage title="Analyze" status={getPipelineStatus('risk')} onClick={() => navigate('/risk')} />
             <PipelineStage title="Deploy" status={getPipelineStatus('deploy')} onClick={() => navigate('/deployment')} />

@@ -73,7 +73,6 @@ spec:
 
       // Phase 8: Health Check
       try {
-        // We use an endpoint that we know is fast and reliable
         await api.getClusterHealth();
       } catch (hcError) {
         throw new Error("CloudChange backend is offline. Please start the backend server.");
@@ -103,19 +102,19 @@ spec:
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-text-primary mb-2">Change Analysis</h2>
-          <p className="text-text-secondary">Detect configuration drifts and evaluate potential deployment impact.</p>
-          <div className="flex flex-wrap items-center gap-2 mt-3">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-primary mb-1 sm:mb-2">Change Analysis</h2>
+          <p className="text-sm sm:text-base text-text-secondary">Detect configuration drifts and evaluate potential deployment impact.</p>
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-3">
             <span className="text-xs text-text-secondary font-medium mr-1">Select Service:</span>
             {AVAILABLE_SERVICES.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 onClick={() => handleSelectService(s.id)}
-                className={`text-xs px-3 py-1 rounded-full border transition-all ${
+                className={`text-xs px-2.5 sm:px-3 py-1 rounded-full border transition-all ${
                   resourceName === s.id
                     ? 'bg-blue-500/20 border-blue-500 text-blue-400 font-semibold shadow-sm shadow-blue-500/20 scale-105'
                     : 'bg-surface border-border text-text-secondary hover:text-text-primary hover:border-gray-600'
@@ -126,12 +125,12 @@ spec:
             ))}
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-56">
             <select
               value={resourceName}
               onChange={(e) => handleSelectService(e.target.value)}
-              className="bg-surface border border-border rounded-lg pl-3 pr-8 py-2 text-text-primary text-sm font-medium focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:border-gray-600 transition-colors shadow-sm w-56"
+              className="bg-surface border border-border rounded-lg pl-3 pr-8 py-2 text-text-primary text-sm font-medium focus:outline-none focus:border-blue-500 appearance-none cursor-pointer hover:border-gray-600 transition-colors shadow-sm w-full"
             >
               {AVAILABLE_SERVICES.map((s) => (
                 <option key={s.id} value={s.id} className="bg-gray-900 text-white">
@@ -144,7 +143,7 @@ spec:
           <button 
             onClick={handleAnalyze}
             disabled={loading}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center shadow-lg shadow-blue-900/20"
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-text-primary rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center shadow-lg shadow-blue-900/20 w-full sm:w-auto"
           >
             {loading ? (
               <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin mr-2"></span> Analyzing...</>
@@ -183,7 +182,7 @@ spec:
             <textarea 
               value={oldManifest}
               onChange={(e) => setOldManifest(e.target.value)}
-              className="w-full h-[400px] bg-black p-4 text-text-secondary font-mono text-[13px] leading-relaxed focus:outline-none resize-none"
+              className="w-full h-[280px] sm:h-[350px] md:h-[400px] bg-black p-4 text-text-secondary font-mono text-[13px] leading-relaxed focus:outline-none resize-none"
               spellCheck="false"
             />
           </CardContent>
@@ -203,7 +202,7 @@ spec:
             <textarea 
               value={newManifest}
               onChange={(e) => setNewManifest(e.target.value)}
-              className="w-full h-[400px] bg-[#0a111a] p-4 text-blue-100 font-mono text-[13px] leading-relaxed focus:outline-none resize-none"
+              className="w-full h-[280px] sm:h-[350px] md:h-[400px] bg-[#0a111a] p-4 text-blue-100 font-mono text-[13px] leading-relaxed focus:outline-none resize-none"
               spellCheck="false"
             />
           </CardContent>
