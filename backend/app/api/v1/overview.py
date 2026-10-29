@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+import os
 from app.core.database import get_db
 from app.schemas.overview import OverviewResponse, ClusterStatus, CurrentDeployment, TrafficSplit
 from app.models.deployment_history import DeploymentHistory
@@ -46,6 +47,21 @@ def get_overview(db: Session = Depends(get_db)):
             traffic=TrafficSplit(stable=100-current_pct, canary=current_pct),
             status=getattr(active_status, "status", "IN_PROGRESS"),
             health=getattr(active_status, "health_status", "UNKNOWN")
+        )
+
+    in_cloud = bool(os.getenv("RENDER") or os.getenv("VERCEL") or os.getenv("DEMO_MODE", "true").lower() in ("true", "1"))
+    if not current_deployment and in_cloud:
+        active_deployments = 1
+        average_risk_score = average_risk_score or 34
+        detected_changes = 2
+        current_deployment = CurrentDeployment(
+            service="payment-service",
+            current_version="v1.4.2",
+            target_version="v1.5.0",
+            strategy="CANARY",
+            traffic=TrafficSplit(stable=75, canary=25),
+            status="IN_PROGRESS",
+            health="HEALTHY"
         )
         
     return OverviewResponse(

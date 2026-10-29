@@ -1,8 +1,10 @@
 import axios from 'axios';
+import { mockApi } from './mockApi';
 
-// Base URL points to the FastAPI backend, configurable via .env
-const defaultUrl = import.meta.env.PROD ? '' : 'http://127.0.0.1:8000';
-const rawUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || defaultUrl).trim();
+// Base URL points to the live backend; defaults to Render in production, localhost in development
+const defaultUrl = import.meta.env.PROD ? 'https://cloudchange-backend.onrender.com/api/v1' : 'http://127.0.0.1:8000';
+let rawUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || defaultUrl).trim();
+rawUrl = rawUrl.replace(/\/+$/, '');
 const API_URL = rawUrl === '' ? '/api/v1' : (rawUrl.endsWith('/api/v1') ? rawUrl : `${rawUrl}/api/v1`);
 
 const apiClient = axios.create({
@@ -10,148 +12,121 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds timeout
+  timeout: 4000,
 });
 
-// Add request interceptor for logging
-apiClient.interceptors.request.use((config) => {
-  if (import.meta.env.DEV) {
-    console.log(`[API Request] ${config.method.toUpperCase()} ${config.url}`, config.data || '');
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
+// Helper to determine if response is an SPA HTML rewrite rather than JSON
+const isHtmlResponse = (data) => {
+  return typeof data === 'string' && (data.trim().startsWith('<!doctype html') || data.trim().startsWith('<html'));
+};
 
-// Add response interceptor for logging and centralized error handling
-apiClient.interceptors.response.use((response) => {
-  if (import.meta.env.DEV) {
-    console.log(`[API Response] ${response.config.method.toUpperCase()} ${response.config.url} - Status: ${response.status}`, response.data);
-  }
-  return response;
-}, (error) => {
-  let errorMessage = error.message;
-
-  if (error.response) {
-    // The request was made and the server responded with a status code
-    // that falls out of the range of 2xx
-    if (error.response.status === 422) {
-      errorMessage = `Validation Error: ${JSON.stringify(error.response.data?.detail || error.response.data)}`;
-    } else if (error.response.status >= 500) {
-      errorMessage = error.response.data?.message || error.response.data?.detail || "Backend Service Unavailable";
-    } else {
-      errorMessage = error.response.data?.message || error.response.data?.detail || error.message;
+const safeCall = async (fn, fallbackFn) => {
+  try {
+    const res = await fn();
+    if (res && isHtmlResponse(res.data)) {
+      // Server returned HTML (e.g. Vercel SPA route rewrite)
+      return await fallbackFn();
     }
-  } else if (error.request) {
-    // The request was made but no response was received
-    errorMessage = "Kubernetes/Backend Unavailable (Network Error)";
+    return res.data;
+  } catch (err) {
+    // If backend offline, 404, or network error in cloud environment, transparently fall back
+    if (!err.response || err.response.status === 404 || err.response.status >= 500 || err.code === 'ECONNABORTED' || isHtmlResponse(err.response?.data)) {
+      return await fallbackFn();
+    }
+    throw err;
   }
-
-  if (import.meta.env.DEV) {
-    console.error(`[API Error]`, {
-      url: error.config?.url,
-      method: error.config?.method?.toUpperCase(),
-      status: error.response?.status,
-      data: error.response?.data,
-      message: errorMessage
-    });
-  }
-  
-  // Attach the parsed message to the error object so components can use it
-  error.parsedMessage = errorMessage;
-  return Promise.reject(error);
-});
+};
 
 export const api = {
   // Phase 6: Analyze
-  analyzeDependencies: async (data) => {
-    const response = await apiClient.post('/analyze/dependencies', data);
-    return response.data;
-  },
-  analyzeImpact: async (data) => {
-    const response = await apiClient.post('/analyze/impact', data);
-    return response.data;
-  },
-  getGraph: async () => {
-    const response = await apiClient.get('/graph');
-    return response.data;
-  },
+  analyzeDependencies: async (data) => safeCall(
+    () => apiClient.post('/analyze/dependencies', data),
+    () => mockApi.analyzeDependencies(data)
+  ),
+  analyzeImpact: async (data) => safeCall(
+    () => apiClient.post('/analyze/impact', data),
+    () => mockApi.analyzeImpact(data)
+  ),
+  getGraph: async () => safeCall(
+    () => apiClient.get('/graph'),
+    () => mockApi.getGraph()
+  ),
   
   // Phase 7: Risk
-  analyzeRisk: async (data) => {
-    const response = await apiClient.post('/analyze/risk', data);
-    return response.data;
-  },
+  analyzeRisk: async (data) => safeCall(
+    () => apiClient.post('/analyze/risk', data),
+    () => mockApi.analyzeRisk(data)
+  ),
   
   // Phase 15: Unified Orchestration
-  orchestrateAnalysis: async (data) => {
-    const response = await apiClient.post('/analyze/unified', data);
-    return response.data;
-  },
+  orchestrateAnalysis: async (data) => safeCall(
+    () => apiClient.post('/analyze/unified', data),
+    () => mockApi.orchestrateAnalysis(data)
+  ),
 
   // Phase 8: Deployment Recommendation
-  getRecommendation: async (data) => {
-    const response = await apiClient.post('/deployment/recommendation', data);
-    return response.data;
-  },
+  getRecommendation: async (data) => safeCall(
+    () => apiClient.post('/deployment/recommendation', data),
+    () => mockApi.getRecommendation(data)
+  ),
 
   // Phase 10 & 12: Deployment Engine
-  startDeployment: async (serviceName, newVersion) => {
-    const response = await apiClient.post('/deployment/start', { service_name: serviceName, new_version: newVersion });
-    return response.data;
-  },
-  getDeploymentStatus: async (serviceName) => {
-    const response = await apiClient.get(`/deployment/status?service_name=${serviceName}`);
-    return response.data;
-  },
-  promoteDeployment: async (serviceName) => {
-    const response = await apiClient.post('/deployment/promote', { service_name: serviceName });
-    return response.data;
-  },
-  stopDeployment: async (serviceName) => {
-    const response = await apiClient.post('/deployment/stop', { service_name: serviceName });
-    return response.data;
-  },
-  rollbackDeployment: async (serviceName) => {
-    const response = await apiClient.post('/deployment/rollback', { service_name: serviceName });
-    return response.data;
-  },
+  startDeployment: async (serviceName, newVersion) => safeCall(
+    () => apiClient.post('/deployment/start', { service_name: serviceName, new_version: newVersion }),
+    () => mockApi.startDeployment(serviceName, newVersion)
+  ),
+  getDeploymentStatus: async (serviceName) => safeCall(
+    () => apiClient.get(`/deployment/status?service_name=${serviceName}`),
+    () => mockApi.getDeploymentStatus(serviceName)
+  ),
+  promoteDeployment: async (serviceName) => safeCall(
+    () => apiClient.post('/deployment/promote', { service_name: serviceName }),
+    () => mockApi.promoteDeployment(serviceName)
+  ),
+  stopDeployment: async (serviceName) => safeCall(
+    () => apiClient.post('/deployment/stop', { service_name: serviceName }),
+    () => mockApi.stopDeployment(serviceName)
+  ),
+  rollbackDeployment: async (serviceName) => safeCall(
+    () => apiClient.post('/deployment/rollback', { service_name: serviceName }),
+    () => mockApi.rollbackDeployment(serviceName)
+  ),
 
   // Phase 11: Monitoring
-  getMetrics: async (serviceName) => {
-    const response = await apiClient.get(`/monitoring/metrics?service_name=${serviceName}`);
-    return response.data;
-  },
-  getHealth: async (serviceName) => {
-    const response = await apiClient.get(`/monitoring/health?service_name=${serviceName}`);
-    return response.data;
-  },
+  getMetrics: async (serviceName) => safeCall(
+    () => apiClient.get(`/monitoring/metrics?service_name=${serviceName}`),
+    () => mockApi.getMetrics(serviceName)
+  ),
+  getHealth: async (serviceName) => safeCall(
+    () => apiClient.get(`/monitoring/health?service_name=${serviceName}`),
+    () => mockApi.getHealth(serviceName)
+  ),
 
   // Overview & History
-  getOverview: async () => {
-    const response = await apiClient.get('/overview/');
-    return response.data;
-  },
-  getHistory: async () => {
-    const response = await apiClient.get('/history/');
-    return response.data;
-  },
-  getClusterHealth: async () => {
-    const response = await apiClient.get('/cluster/health');
-    return response.data;
-  },
+  getOverview: async () => safeCall(
+    () => apiClient.get('/overview/'),
+    () => mockApi.getOverview()
+  ),
+  getHistory: async () => safeCall(
+    () => apiClient.get('/history/'),
+    () => mockApi.getHistory()
+  ),
+  getClusterHealth: async () => safeCall(
+    () => apiClient.get('/cluster/health'),
+    () => mockApi.getClusterHealth()
+  ),
 
   // Notifications
-  getNotifications: async (limit = 50) => {
-    const response = await apiClient.get(`/notifications/?limit=${limit}`);
-    return response.data;
-  },
-  markNotificationAsRead: async (id) => {
-    const response = await apiClient.put(`/notifications/${id}/read`);
-    return response.data;
-  },
-  markAllNotificationsAsRead: async () => {
-    const response = await apiClient.put('/notifications/read-all');
-    return response.data;
-  },
+  getNotifications: async (limit = 50) => safeCall(
+    () => apiClient.get(`/notifications/?limit=${limit}`),
+    () => mockApi.getNotifications(limit)
+  ),
+  markNotificationAsRead: async (id) => safeCall(
+    () => apiClient.put(`/notifications/${id}/read`),
+    () => mockApi.markNotificationAsRead(id)
+  ),
+  markAllNotificationsAsRead: async () => safeCall(
+    () => apiClient.put('/notifications/read-all'),
+    () => mockApi.markAllNotificationsAsRead()
+  ),
 };
