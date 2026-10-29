@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Network, ShieldAlert, Rocket, Activity, GitCompare, History, Settings, Bell, Sun, Moon, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Network, ShieldAlert, Rocket, Activity, GitCompare, History, Sun, Moon, Menu, X } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { ToastProvider } from './Toast';
 import { api } from '../services/api';
@@ -172,7 +172,7 @@ export const Layout = () => {
             </div>
             <h1 className="hidden md:block text-lg font-semibold text-text-primary">Control Center</h1>
           </div>
-          <div className="flex items-center space-x-2 sm:space-x-4 text-sm text-text-secondary">
+          <div className="flex items-center space-x-2 sm:space-x-3 text-sm text-text-secondary">
             <button 
               onClick={toggleTheme} 
               className="hover:text-primary transition-colors flex items-center justify-center p-2 rounded-full hover:bg-surface" 
@@ -180,9 +180,6 @@ export const Layout = () => {
             >
               {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
             </button>
-            <button className="hidden sm:flex hover:text-primary transition-colors p-1.5"><Bell size={18} /></button>
-            <button className="hidden sm:flex hover:text-primary transition-colors p-1.5"><Settings size={18} /></button>
-            <div className="hidden sm:block h-4 w-px bg-border"></div>
             <div className="flex items-center bg-surface px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-border shadow-sm">
               <span className={cn("w-2 h-2 rounded-full mr-1.5 sm:mr-2 flex-shrink-0", clusterHealth.status === 'HEALTHY' ? "bg-success shadow-[0_0_5px_rgba(16,185,129,0.5)]" : clusterHealth.status === 'CONNECTING' ? "bg-amber-400 animate-pulse" : "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]")}></span> 
               <span className="text-text-secondary font-medium text-[11px] sm:text-xs uppercase tracking-wide truncate max-w-[120px] sm:max-w-none">
