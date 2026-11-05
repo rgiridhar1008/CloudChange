@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/assets/logo.png" alt="CloudChange Logo" width="140" />
+
 # ☁️ CloudChange
 
 ### **Kubernetes Continuous Deployment Risk Engine & Progressive Rollout Controller**
@@ -20,7 +22,7 @@
   Deterministic Risk Engine • Dependency Blast-Radius Graph • Progressive Canary Rollouts • Prometheus Telemetry Gating • Automated Instant Rollback
 </p>
 
-[Explore Documentation](docs/) • [Architecture](docs/architecture.md) • [API Reference](docs/api.md) • [Live Dashboard](http://localhost:5173)
+[Explore Documentation](docs/) • [Architecture](docs/architecture.md) • [API Reference](docs/api.md) • [Live Dashboard (Vercel)](https://cloud-change.vercel.app/) • [Local Dev](http://localhost:3000)
 
 ---
 
